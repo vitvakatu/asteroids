@@ -3,6 +3,28 @@ extern crate three;
 extern crate euler;
 
 use three::Object;
+use three::object::Base;
+
+struct Ship {
+	pos: euler::Vec2,
+	rotation: f32,
+	speed: euler::Vec2,
+	group: three::Group,
+}
+
+impl AsRef<Base> for Ship {
+	fn as_ref(&self) -> &Base {
+		self.group.as_ref()
+	}
+}
+
+impl AsMut<Base> for Ship {
+	fn as_mut(&mut self) -> &mut Base {
+		self.group.as_mut()
+	}
+}
+
+impl Object for Ship {}
 
 fn main() {
     let mut window = three::Window::new("Asteroids");
