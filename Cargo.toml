@@ -5,4 +5,4 @@ authors = ["Ilya Bogdanov <fumlead@gmail.com>"]
 
 [dependencies]
 three = { git = "https://github.com/three-rs/three/" }
-euler = { version = "0.2", features = ["mint"] }
+cgmath = { version = "0.16", features = ["mint"] }

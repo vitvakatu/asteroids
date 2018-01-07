@@ -1,8 +1,8 @@
 extern crate three;
-#[macro_use]
-extern crate euler;
+extern crate cgmath;
 
-use euler::{Vec2, Vec3};
+use cgmath::{Vector2, Vector3, Quaternion as Quat, One, Zero, Rotation3, Rad};
+use std::f32::consts::PI;
 
 use three::Object;
 use three::object::Base;
@@ -11,10 +11,10 @@ const SHIP_ROTATION_SPEED: f32 = 3.14;
 const SHIP_ACCELERATION: f32 = 1.0;
 
 struct Ship {
-	pos: euler::Vec2,
-	orientation: euler::Quat,
+	pos: Vector2<f32>,
+	orientation: Quat<f32>,
 	rotation: f32,
-	speed: Vec2,
+	speed: Vector2<f32>,
 	group: three::Group,
 }
 
@@ -33,7 +33,7 @@ impl AsMut<Base> for Ship {
 impl Object for Ship {}
 
 impl Ship {
-	fn new(factory: &mut three::Factory, init_pos: Option<Vec2>) -> Self {
+	fn new(factory: &mut three::Factory, init_pos: Option<Vector2<f32>>) -> Self {
 		let vertices = vec![
 			[0.0, 0.0, 0.0].into(),
 			[-0.2, -0.1, 0.0].into(),
@@ -47,26 +47,42 @@ impl Ship {
 		let group = factory.group();
 		let mesh = factory.mesh(geometry, material);
 		mesh.set_scale(0.2);
+		mesh.set_orientation(Quat::from_angle_y(Rad(PI)));
 		group.add(mesh);
-	    group.look_at([0.0, 0.0, 0.0], [0.0, 0.0, 10.0], None);
 		Self {
-			pos: init_pos.unwrap_or(vec2!(0.0, 0.0)),
+			pos: init_pos.unwrap_or(Vector2::zero()),
 			rotation: 0.0,
-			orientation: quat!(),
-			speed: vec2!(),
+			orientation: Quat::one(),
+			speed: Vector2::zero(),
 			group,
 		}
 	}
 
-	fn update(&mut self, factory: &mut three::Factory, input: &three::Input) {
+	fn update(&mut self, _factory: &mut three::Factory, input: &three::Input) {
 		if input.hit(three::Key::A) {
 			self.rotation -= SHIP_ROTATION_SPEED * input.delta_time();
 		}
 		if input.hit(three::Key::D) {
 			self.rotation += SHIP_ROTATION_SPEED * input.delta_time();
 		}
-		let new_orientation = self.orientation * quat!(vec3!(-1.0, 0.0, 0.0); self.rotation);
+		let new_orientation = Quat::from_angle_z(Rad(self.rotation)) * self.orientation;
 		self.set_orientation(new_orientation);
+
+		// acceleration
+		if input.hit(three::Key::W) {
+			let mut dv = new_orientation * Vector3::unit_y();
+			dv *= SHIP_ACCELERATION;
+			dv *= input.delta_time();
+			self.speed.x += dv.x;
+			self.speed.y += dv.y;
+		}
+
+		self.pos.x += self.speed.x * input.delta_time();
+		self.pos.y += self.speed.y * input.delta_time();
+		self.speed.x -= self.speed.x * input.delta_time();
+		self.speed.y -= self.speed.y * input.delta_time();
+
+		self.set_position([self.pos.x, self.pos.y, 0.0]);
 	}
 }
 
@@ -79,7 +95,7 @@ fn main() {
     window.scene.add(&ship);
 	{
     	let mut guard = window.scene.sync_guard();
-    	ship.orientation = guard.resolve(&ship).transform.orientation.into();
+    	ship.orientation = guard.resolve_world(&ship).transform.orientation.into();
 	}
 
     while window.update() && !window.input.hit(three::KEY_ESCAPE) {
