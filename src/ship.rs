@@ -72,7 +72,7 @@ impl Ship {
 		let new_orientation = Quat::axis_angle(vec3!(0.0, 0.0, 1.0), self.rotation);
 		self.set_orientation(new_orientation);
 
-		let mut dv = vec3!(0.0, 1.0, 0.0).rotate(new_orientation);
+		let mut dv = new_orientation.rotate(vec3!(0.0, 1.0, 0.0));
 
 		if input.hit(three::Key::Space) && self.shot_timer.get(input) > SHOT_TIMEOUT {
 			let bullet = bullet::Bullet::new(&mut window.factory, input, self.pos, dv.xy().normalize());

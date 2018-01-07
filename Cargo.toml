@@ -6,4 +6,4 @@ authors = ["Ilya Bogdanov <fumlead@gmail.com>"]
 [dependencies]
 rand = "0.4"
 three = { git = "https://github.com/three-rs/three/" }
-euler = { git = "https://github.com/alteous/euler/", features = ["mint"] }
+euler = { version = "0.3", features = ["mint"] }
