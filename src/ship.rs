@@ -3,15 +3,20 @@ use three;
 use three::object::Base;
 use three::Object;
 
+use bullet;
 use world_to_screen;
 
 const SHIP_ROTATION_SPEED: f32 = 3.14;
 const SHIP_ACCELERATION: f32 = 1.0;
+const SHOT_TIMEOUT: f32 = 0.3;
+const BULLET_LIFETIME: f32 = 1.0;
 
 pub struct Ship {
 	pos: Vec2,
 	rotation: f32,
-	speed: Vec2,
+	vel: Vec2,
+	shot_timer: three::Timer,
+	bullets: Vec<bullet::Bullet>,
 	group: three::Group,
 }
 
@@ -30,7 +35,7 @@ impl AsMut<Base> for Ship {
 impl Object for Ship {}
 
 impl Ship {
-	pub fn new(factory: &mut three::Factory, init_pos: Option<Vec2>) -> Self {
+	pub fn new(window: &mut three::Window, init_pos: Option<Vec2>) -> Self {
 		let vertices = vec![
 			[0.0, 0.0, 0.0].into(),
 			[0.0, 0.5, 0.0].into(),
@@ -41,14 +46,16 @@ impl Ship {
 		];
 		let geometry = three::Geometry::with_vertices(vertices);
 		let material = three::material::Wireframe { color: 0xFFFFFF };
-		let group = factory.group();
-		let mesh = factory.mesh(geometry, material);
+		let group = window.factory.group();
+		let mesh = window.factory.mesh(geometry, material);
 		mesh.set_scale(0.2);
 		group.add(mesh);
 		Self {
 			pos: init_pos.unwrap_or(vec2!()),
 			rotation: 0.0,
-			speed: vec2!(),
+			vel: vec2!(),
+			bullets: vec![],
+			shot_timer: window.input.time(),
 			group,
 		}
 	}
@@ -65,19 +72,24 @@ impl Ship {
 		let new_orientation = Quat::axis_angle(vec3!(0.0, 0.0, 1.0), self.rotation);
 		self.set_orientation(new_orientation);
 
-		// Acceleration
-		if input.hit(three::Key::W) {
-			let mut dv = vec3!(0.0, 1.0, 0.0).rotate(new_orientation);
-			dv = dv * SHIP_ACCELERATION;
-			dv = dv * input.delta_time();
-			self.speed.x += dv.x;
-			self.speed.y += dv.y;
+		let mut dv = vec3!(0.0, 1.0, 0.0).rotate(new_orientation);
+
+		if input.hit(three::Key::Space) && self.shot_timer.get(input) > SHOT_TIMEOUT {
+			let bullet = bullet::Bullet::new(&mut window.factory, input, self.pos, dv.xy().normalize());
+			window.scene.add(&bullet);
+			self.bullets.push(bullet);
+			self.shot_timer = input.time();
 		}
 
-		self.pos.x += self.speed.x * input.delta_time();
-		self.pos.y += self.speed.y * input.delta_time();
-		self.speed.x -= self.speed.x * input.delta_time();
-		self.speed.y -= self.speed.y * input.delta_time();
+		// Acceleration
+		if input.hit(three::Key::W) {
+			dv = dv * SHIP_ACCELERATION;
+			dv = dv * input.delta_time();
+			self.vel += dv.xy();
+		}
+
+		self.pos += self.vel * input.delta_time();
+		self.vel -= self.vel * input.delta_time();
 
 		// Check window borders
 		let window_size = window.size();
@@ -92,10 +104,13 @@ impl Ship {
 		} else if screen_pos.y > window_size.y {
 			screen_pos.y -= window_size.y;
 		}
-		let pos = window.renderer.map_to_ndc(screen_pos);
-		self.pos.x = pos.x;
-		self.pos.y = pos.y;
+		self.pos = window.renderer.map_to_ndc(screen_pos).into();
 
 		self.set_position([self.pos.x, self.pos.y, 0.0]);
+
+		// Update bullets
+		self.bullets.iter_mut().for_each(|bullet| bullet.update(input));
+		self.bullets.retain(|bullet| bullet.alive_timer.get(input) < BULLET_LIFETIME);
+		println!("{}", self.bullets.len());
 	}
 }
