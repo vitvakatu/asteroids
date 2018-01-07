@@ -66,12 +66,12 @@ impl Ship {
 		let input = &window.input;
 		// Rotation
 		if input.hit(three::Key::A) {
-			self.rotation -= SHIP_ROTATION_SPEED * input.delta_time();
-		}
-		if input.hit(three::Key::D) {
 			self.rotation += SHIP_ROTATION_SPEED * input.delta_time();
 		}
-		let new_orientation = Quat::axis_angle(vec3!(0.0, 0.0, 1.0), self.rotation) * self.orientation;
+		if input.hit(three::Key::D) {
+			self.rotation -= SHIP_ROTATION_SPEED * input.delta_time();
+		}
+		let new_orientation = Quat::axis_angle(vec3!(0.0, 0.0, 1.0), self.rotation);
 		self.set_orientation(new_orientation);
 
 		// Acceleration
