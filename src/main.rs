@@ -41,18 +41,17 @@ impl Ship {
 	fn new(factory: &mut three::Factory, init_pos: Option<Vec2>) -> Self {
 		let vertices = vec![
 			[0.0, 0.0, 0.0].into(),
+			[0.0, 0.5, 0.0].into(),
 			[-0.2, -0.1, 0.0].into(),
-			[0.0, 0.5, 0.0].into(),
 			[0.0, 0.0, 0.0].into(),
-			[0.0, 0.5, 0.0].into(),
 			[0.2, -0.1, 0.0].into(),
+			[0.0, 0.5, 0.0].into(),
 		];
 		let geometry = three::Geometry::with_vertices(vertices);
 		let material = three::material::Wireframe { color: 0xFFFFFF };
 		let group = factory.group();
 		let mesh = factory.mesh(geometry, material);
 		mesh.set_scale(0.2);
-		mesh.set_orientation(Quat::euler(vec3!(0.0, PI, 0.0)));
 		group.add(mesh);
 		Self {
 			pos: init_pos.unwrap_or(vec2!()),
@@ -72,7 +71,7 @@ impl Ship {
 		if input.hit(three::Key::D) {
 			self.rotation += SHIP_ROTATION_SPEED * input.delta_time();
 		}
-		let new_orientation = Quat::axis_angle(vec3!(1.0, 0.0, 0.0), self.rotation) * self.orientation;
+		let new_orientation = Quat::axis_angle(vec3!(0.0, 0.0, 1.0), self.rotation) * self.orientation;
 		self.set_orientation(new_orientation);
 
 		// Acceleration
