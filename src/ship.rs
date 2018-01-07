@@ -111,6 +111,5 @@ impl Ship {
 		// Update bullets
 		self.bullets.iter_mut().for_each(|bullet| bullet.update(input));
 		self.bullets.retain(|bullet| bullet.alive_timer.get(input) < BULLET_LIFETIME);
-		println!("{}", self.bullets.len());
 	}
 }
